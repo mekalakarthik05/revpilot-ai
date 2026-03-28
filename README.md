@@ -57,10 +57,10 @@ Leads → Risk Detection → Prediction → Strategy → Email → Tracking → 
 
 ## 🖥️ Run Locally
 
-\`\`\`bash
+```bash
 pip install -r requirements.txt
 streamlit run app.py
-\`\`\`
+```
 
 ---
 
