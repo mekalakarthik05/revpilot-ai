@@ -3,21 +3,41 @@ import time
 from datetime import datetime
 
 from crm import deals
-from agents import coordinator_agent, get_memory, prospecting_agent, metrics_agent
-from actions import send_email, get_email_events
+from agents import (
+    coordinator_agent,
+    get_memory,
+    prospecting_agent,
+    metrics_agent,
+    impact_agent
+)
+from actions import get_email_events
+
 
 st.set_page_config(page_title="RevPilot AI", layout="wide")
 
-# ================= UI STYLE =================
+
+# Clean UI Styling
 st.markdown("""
 <style>
-body { background-color: #0b0f1a; }
+body {
+    background-color: #0b0f1a;
+}
 
 .card {
     background: linear-gradient(145deg, #1e293b, #0f172a);
     padding: 18px;
     border-radius: 12px;
     margin-bottom: 12px;
+}
+
+.section-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.metric-box {
+    text-align: center;
 }
 
 .log {
@@ -30,55 +50,61 @@ body { background-color: #0b0f1a; }
 </style>
 """, unsafe_allow_html=True)
 
-# ================= HEADER =================
+
+# Header
 st.markdown("""
-<h1 style='text-align:center;'>🚀 RevPilot AI</h1>
+<h1 style='text-align:center;'>RevPilot AI</h1>
 <p style='text-align:center;color:gray;'>
-Autonomous Multi-Agent Revenue Intelligence System
+Autonomous Revenue Intelligence System
 </p>
 """, unsafe_allow_html=True)
 
-# ================= METRICS =================
+
+# Metrics
 total = len(deals)
 recovered = len([d for d in deals if d["status"] == "Recovery Initiated"])
 revenue = sum(d["value"] for d in deals if d["status"] == "Recovery Initiated")
 
 metrics = metrics_agent(deals)
+impact = impact_agent(deals)
 
-st.markdown("## 📊 Business Dashboard")
+st.markdown("## Business Overview")
 
 c1, c2, c3, c4 = st.columns(4)
+
 c1.metric("Total Deals", total)
 c2.metric("Recovered Deals", recovered)
 c3.metric("Revenue Impact", f"₹{revenue}")
-c4.metric("Conversion", f"{metrics['conversion']}%")
+c4.metric("Conversion Rate", f"{metrics['conversion']}%")
 
-st.caption(f"Cycle Time Reduced: {metrics['cycle_reduction']}%")
+st.caption(f"Cycle Time Reduction: {metrics['cycle_reduction']}%")
 
-# ================= AI CONTROL =================
-st.markdown("## 🎛️ AI Control Panel")
 
-auto_mode = st.toggle("Enable Autonomous Mode")
+# AI Control
+st.markdown("## System Control")
+
+auto_mode = st.toggle("Autonomous Mode")
 
 if auto_mode:
-    st.success("🟢 Autonomous AI Running")
+    st.success("System running in autonomous mode")
 else:
-    st.warning("🟡 Manual Mode")
+    st.info("Manual mode active")
 
-# ================= PIPELINE =================
-st.markdown("## 📊 Pipeline Overview")
+
+# Pipeline Overview
+st.markdown("## Pipeline Overview")
 
 left, right = st.columns([1, 3])
 
 with left:
-    st.markdown("<div class='card'><h4>Risk Distribution</h4>", unsafe_allow_html=True)
+    st.markdown("<div class='card'><div class='section-title'>Risk Distribution</div>", unsafe_allow_html=True)
 
     high = len([d for d in deals if d["days_no_reply"] > 10])
     medium = len([d for d in deals if 5 < d["days_no_reply"] <= 10])
     low = total - high - medium
 
     def bar(label, value, color):
-        percent = int((value / max(total,1)) * 100)
+        percent = int((value / max(total, 1)) * 100)
         st.markdown(f"""
         <div style="margin-bottom:10px;">
             <b>{label}</b> ({value})
@@ -89,9 +115,8 @@ with left:
                     padding:6px;
                     border-radius:6px;
                     text-align:right;
-                    color:white;
-                ">
-                {percent}%
+                    color:white;">
+                    {percent}%
                 </div>
             </div>
         </div>
@@ -103,88 +128,72 @@ with left:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
+
 with right:
     colA, colB = st.columns(2)
 
     with colA:
-        st.markdown("<div class='card'><h4>⚡ AI System Status</h4>", unsafe_allow_html=True)
-        st.success("Autonomous Agents Active")
-        st.write("• Intelligence Agent: Running")
-        st.write("• Strategy Agent: Optimizing")
-        st.write("• Execution Agent: Active")
-        st.write("• Learning Engine: Updating")
+        st.markdown("<div class='card'><div class='section-title'>System Status</div>", unsafe_allow_html=True)
+
+        st.write("Intelligence Engine: Active")
+        st.write("Strategy Engine: Running")
+        st.write("Execution Engine: Active")
+        st.write("Learning Engine: Updating")
+
         st.markdown("</div>", unsafe_allow_html=True)
 
     with colB:
-        st.markdown("<div class='card'><h4>📈 Live Impact</h4>", unsafe_allow_html=True)
-        st.metric("Decisions Made", total)
-        st.metric("Actions Triggered", recovered)
-        st.metric("Success Rate", f"{int((recovered/total)*100)}%")
+        st.markdown("<div class='card'><div class='section-title'>Live Performance</div>", unsafe_allow_html=True)
+
+        st.metric("Decisions Processed", total)
+        st.metric("Actions Executed", recovered)
+        st.metric("Success Rate", f"{int((recovered/max(total,1))*100)}%")
         st.metric("Avg Response Time", "0.3s")
+
         st.markdown("</div>", unsafe_allow_html=True)
 
-# ================= AI INTELLIGENCE =================
-st.markdown("## 🧠 AI Intelligence Layer")
+
+# Intelligence Layer
+st.markdown("## Intelligence Insights")
 
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    st.markdown("<div class='card'><h4>🧠 Decision Brain</h4>", unsafe_allow_html=True)
+    st.markdown("<div class='card'><div class='section-title'>Risk Evaluation</div>", unsafe_allow_html=True)
 
     sample = deals[0]
     result = coordinator_agent(sample)
 
     st.write(f"Inactivity: {sample['days_no_reply']} days")
-    st.write(f"Engagement: {sample['engagement_score']}")
-    st.write(f"Churn Prediction: {result['prediction']}%")
+    st.write(f"Engagement Score: {sample['engagement_score']}")
+    st.write(f"Churn Prediction: {result.get('prediction', 0)}%")
 
-    st.progress(result['prediction'] / 100)
-    st.caption("AI evaluating deal risk signals")
+    st.progress(result.get('prediction', 0) / 100)
 
     st.markdown("</div>", unsafe_allow_html=True)
+
 
 with col2:
-    st.markdown("<div class='card'><h4>📊 Strategy Effectiveness</h4>", unsafe_allow_html=True)
+    st.markdown("<div class='card'><div class='section-title'>Strategy Summary</div>", unsafe_allow_html=True)
 
-    def stat(label, value, color):
-        percent = int((value / max(total,1)) * 100)
-        st.markdown(f"""
-        <div style="margin-bottom:10px;">
-            <b>{label}</b>
-            <div style="background:#1f2937;border-radius:6px;">
-                <div style="
-                    width:{percent}%;
-                    background:{color};
-                    padding:6px;
-                    border-radius:6px;
-                    text-align:right;
-                    color:white;
-                ">
-                {value}
-                </div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    stat("Recovered", recovered, "#6366f1")
-    stat("Pending", total - recovered, "#64748b")
+    st.write(f"Recovered: {recovered}")
+    st.write(f"Pending: {total - recovered}")
 
     st.markdown("</div>", unsafe_allow_html=True)
+
 
 with col3:
-    st.markdown("<div class='card'><h4>💡 AI Insights</h4>", unsafe_allow_html=True)
+    st.markdown("<div class='card'><div class='section-title'>Key Insights</div>", unsafe_allow_html=True)
 
-    st.write("• AI predicts deal churn in next 7 days")
-    st.write("• Competitive signals detected (Zoho, Salesforce)")
-    st.write("• ROI messaging drives highest conversion")
-    st.write("• Follow-up delay = biggest revenue leak")
-
-    st.success("AI continuously learning")
+    st.write("Deal inactivity strongly impacts conversion")
+    st.write("Competitive signals influence decision making")
+    st.write("Faster follow-ups improve recovery rate")
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-# ================= AUTONOMOUS ENGINE =================
-st.markdown("## 🤖 Autonomous Engine")
+
+# Autonomous Execution
+st.markdown("## Autonomous Execution")
 
 log_box = st.empty()
 logs = []
@@ -194,7 +203,8 @@ def log(msg):
     logs.insert(0, f"<div class='log'><b>[{t}]</b><br>{msg}</div>")
     log_box.markdown("".join(logs[:10]), unsafe_allow_html=True)
 
-if st.button("Start AI Execution") or auto_mode:
+
+if st.button("Run Execution Cycle") or auto_mode:
 
     progress = st.progress(0)
 
@@ -202,79 +212,77 @@ if st.button("Start AI Execution") or auto_mode:
 
         result = coordinator_agent(deal)
 
-        if result["risk"] != "LOW":
+        if result.get("risk") and result["risk"] != "LOW":
 
-            log(f"🚨 Risk detected → {deal['company']}")
-            log(f"🧠 Prediction → {result['prediction']}%")
-            log(f"🎯 Strategy → {result['strategy']['name']}")
+            log(f"Risk detected for {deal['company']}")
+            log(f"Prediction: {result.get('prediction', 0)}%")
 
-            log("📧 Generating Email...")
-            log(result["email"])
+            if "strategy" in result:
+                log(f"Strategy: {result['strategy']['name']}")
 
-            event = send_email(
-                deal["email"],
-                "Regarding our discussion",
-                result["email"]
-            )
+            if "email" in result:
+                log("Generating outreach")
+                log(result["email"])
 
-            deal["email_opened"] = event["opened"]
-            deal["replied"] = event["replied"]
+            if "email_event" in result:
+                event = result["email_event"]
+                log(f"Email sent to {deal['email']}")
+                log(f"Opened: {event['opened']} | Replied: {event['replied']}")
 
-            log(f"📨 Sent → {deal['email']}")
-            log(f"👀 Opened → {event['opened']}")
-            log(f"💬 Replied → {event['replied']}")
+            if "adaptation" in result:
+                log(f"Adaptation: {result['adaptation']}")
+            if "trace" in result:
+                log(f"Trace: {result['trace']}")
 
-            if result.get("competitive"):
-                log(f"⚔️ {result['competitive']['battlecard']}")
+            log("Cycle complete")
 
-            log(f"🔁 Adaptation → {result['adaptation']}")
-            log("────────────")
+        progress.progress((i + 1) / len(deals))
+        time.sleep(0.2)
 
-        progress.progress((i+1)/len(deals))
-        time.sleep(0.25)
+    st.success("Execution cycle completed")
 
-    st.success("Autonomous cycle completed")
 
-# ================= LEARNING =================
-st.markdown("## 🧠 Learning Engine")
+# Learning
+st.markdown("## Learning Engine")
 
 memory = get_memory()
 
 if memory:
     st.metric("Learned Strategies", len(memory))
     for m in memory:
-        st.write(f"• {m['company']} → {m['strategy']}")
-    st.success("AI improving continuously")
+        st.write(f"{m['company']} -> {m['strategy']}")
 else:
-    st.info("Learning in progress...")
+    st.info("Learning in progress")
 
-# ================= PROSPECTING =================
-st.markdown("## 🔍 Prospecting Agent")
 
-for l in prospecting_agent():
+# Prospecting
+st.markdown("## Prospecting")
+
+for lead in prospecting_agent():
     st.markdown(f"""
     <div class='card'>
-    <b>{l['company']}</b> ({l['industry']})<br>
-    Score: {l['score']}<br>
-    📧 {l['outreach']}
+    <b>{lead['company']}</b> ({lead['industry']})<br>
+    Score: {lead['score']}<br>
+    {lead['outreach']}
     </div>
     """, unsafe_allow_html=True)
 
-# ================= EMAIL TRACKING =================
-st.markdown("## 📬 Email Tracking")
+
+# Email Tracking
+st.markdown("## Email Activity")
 
 events = get_email_events()
 
 if events:
     for e in events:
-        status = "🟢 Replied" if e["replied"] else ("🟡 Opened" if e["opened"] else "🔴 Not Opened")
+        status = "Replied" if e["replied"] else ("Opened" if e["opened"] else "Not Opened")
 
         st.markdown(f"""
         <div class='card'>
-        📧 {e['email']}<br>
+        {e['email']}<br>
         Status: {status}<br>
         Time: {e['time']}
         </div>
         """, unsafe_allow_html=True)
 else:
-    st.info("No email activity yet")
+    st.info("No activity recorded yet")

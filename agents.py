@@ -1,20 +1,25 @@
 import random
+import json
+from datetime import datetime
+from llm import ask_llm
+from actions import send_email
 
-# ================= MEMORY =================
+# Memory Store
 memory_store = []
 
 def store_memory(deal, strategy, outcome):
     memory_store.append({
         "company": deal["company"],
         "strategy": strategy,
-        "outcome": outcome
+        "outcome": outcome,
+        "time": datetime.now().isoformat()
     })
 
 def get_memory():
     return memory_store[-5:]
 
 
-# ================= PROSPECTING =================
+# Prospecting Agent
 def prospecting_agent():
     leads = [
         {"company": "DataZen", "industry": "AI SaaS"},
@@ -26,41 +31,52 @@ def prospecting_agent():
 
     for l in leads:
 
-        # 🔥 AI-STYLE SCORING (Industry relevance)
-        base_score = 70
+        prompt = f"""
+        You are a sales prospecting AI.
 
-        if "AI" in l["industry"]:
-            score = base_score + 20   # High priority
-        elif "Cloud" in l["industry"]:
-            score = base_score + 15
-        elif "FinTech" in l["industry"]:
-            score = base_score + 10
-        else:
-            score = base_score
-        
-        score += random.randint(-5, 5)  # Add some variability
+        Company: {l['company']}
+        Industry: {l['industry']}
 
-        # 🔥 AI-STYLE PERSONALIZED OUTREACH
-        if "AI" in l["industry"]:
-            message = f"Hi {l['company']}, we help AI companies scale revenue with intelligent automation."
-        elif "Cloud" in l["industry"]:
-            message = f"Hi {l['company']}, we optimize cloud sales pipelines to increase conversion."
-        elif "FinTech" in l["industry"]:
-            message = f"Hi {l['company']}, we help fintech teams reduce churn and improve deal velocity."
-        else:
-            message = f"Hi {l['company']}, we improve revenue efficiency across your sales pipeline."
+        Generate:
+        1. Lead score (0-100)
+        2. Personalized outreach message
 
+        Return JSON:
+        {{
+          "score": number,
+          "message": "..."
+        }}
+        """
+
+        response = ask_llm(prompt)
+
+        if response:
+            try:
+                import json
+                data = json.loads(response)
+
+                enriched.append({
+                    "company": l["company"],
+                    "industry": l["industry"],
+                    "score": data["score"],
+                    "outreach": data["message"]
+                })
+                continue
+            except:
+                pass
+
+        # fallback
         enriched.append({
             "company": l["company"],
             "industry": l["industry"],
-            "score": score,
-            "outreach": message
+            "score": random.randint(70, 90),
+            "outreach": f"Hi {l['company']}, let's connect."
         })
 
     return enriched
 
 
-# ================= INTELLIGENCE =================
+# Risk Analysis
 def intelligence_agent(deal):
     score = (
         deal["days_no_reply"] * 5 +
@@ -78,7 +94,7 @@ def intelligence_agent(deal):
     return {"risk": risk, "score": int(score)}
 
 
-# ================= PREDICTIVE =================
+# Churn Prediction
 def predictive_agent(deal):
     churn = min(
         0.9,
@@ -87,7 +103,7 @@ def predictive_agent(deal):
     return int(churn * 100)
 
 
-# ================= COMPETITIVE =================
+# Competitive Insight
 def competitive_agent(deal):
     if deal.get("competitor"):
         return {
@@ -96,96 +112,139 @@ def competitive_agent(deal):
     return None
 
 
-# ================= EMAIL =================
+# Company Intelligence
+def enrichment_agent(deal):
+    prompt = f"""
+    Provide business insights for sales outreach.
+
+    Company: {deal['company']}
+    """
+
+    return ask_llm(prompt) or "Scaling operations and improving conversions"
+
+
+# Email Generator
 def email_agent(deal, prediction, strategy, competitive):
+    insights = enrichment_agent(deal)
 
-    inactivity = deal["days_no_reply"]
-    engagement = deal["engagement_score"]
-    company = deal["company"]
+    prompt = f"""
+    Write a short B2B sales email.
 
-    opening = (
-        f"I noticed we haven’t connected in the last {inactivity} days"
-        if inactivity > 7 else
-        "Just following up on our recent conversation"
-    )
+    Company: {deal['company']}
+    Insights: {insights}
+    Risk: {prediction}%
+    Strategy: {strategy['name']}
+    Competitor: {deal.get('competitor')}
+    """
 
-    if prediction > 70:
-        risk_line = "our system is detecting a high risk of deal drop-off"
-    elif prediction > 40:
-        risk_line = "there may be a slowdown in deal progress"
-    else:
-        risk_line = "things seem to be progressing well"
+    response = ask_llm(prompt)
 
-    engagement_line = ""
-    if engagement < 0.3:
-        engagement_line = "We also observed lower engagement, which may impact timelines."
+    if response:
+        return response
 
-    comp_line = ""
-    if competitive:
-        comp_line = "We understand you're evaluating alternatives and want to ensure best ROI."
-
-    value_line = "Our customers typically improve ROI by 25–30%."
-
-    return f"""
-Hi {company} Team,
-
-{opening}, and {risk_line}.
-
-{engagement_line}
-
-{comp_line}
-
-{value_line}
-
-Would you be open to a quick discussion this week?
-
-Best regards,  
-Sales Team
-""".strip()
+    return f"Hi {deal['company']} Team, following up on our discussion."
 
 
-# ================= STRATEGY =================
+# Strategy Engine
 def strategy_agent(deal, intel, prediction, comp):
+    memory = get_memory()
 
-    options = []
+    prompt = f"""
+    Suggest best sales strategy.
 
-    if prediction > 60:
-        options.append(("Urgent Recovery", 0.92))
+    Past:
+    {memory}
 
-    if deal["engagement_score"] < 0.3:
-        options.append(("ROI Re-engagement", 0.88))
+    Company: {deal['company']}
+    Risk: {intel['risk']}
+    Churn: {prediction}%
+    Engagement: {deal['engagement_score']}
+    Competitor: {deal.get('competitor')}
 
-    if comp:
-        options.append(("Competitive Positioning", 0.9))
+    Return JSON:
+    {{
+      "strategy": "...",
+      "reason": "...",
+      "confidence": 0-1
+    }}
+    """
 
-    if not options:
-        options.append(("Relationship Nurturing", 0.6))
+    response = ask_llm(prompt)
 
-    best = max(options, key=lambda x: x[1])
+    if response:
+        try:
+            data = json.loads(response)
+            return {
+                "name": data["strategy"],
+                "reason": data["reason"],
+                "confidence": data["confidence"],
+                "alternatives": []
+            }
+        except:
+            pass
 
     return {
-        "name": best[0],
-        "confidence": best[1],
-        "alternatives": [o[0] for o in options]
+        "name": "Follow-up Strategy",
+        "confidence": 0.5,
+        "alternatives": []
     }
 
 
-# ================= EXECUTION =================
+# Execution Engine
 def execution_agent(deal):
     deal["status"] = "Recovery Initiated"
     deal["days_no_reply"] = 0
 
 
-# ================= ADAPTATION =================
+# Adaptation Logic
 def adaptation_agent(deal):
     if deal["email_opened"] and not deal["replied"]:
-        return "Switch to urgency follow-up"
+        return "Switch follow-up strategy"
     elif not deal["email_opened"]:
         return "Change subject line"
     return "Maintain strategy"
 
 
-# ================= METRICS =================
+# Decision Explanation
+def explanation_agent(deal, strategy, prediction):
+    prompt = f"""
+    Explain why this deal is at risk.
+
+    Company: {deal['company']}
+    Churn risk: {prediction}%
+    Strategy: {strategy['name']}
+    """
+
+    return ask_llm(prompt) or "Risk due to inactivity and low engagement"
+
+
+# Email Sequence Generator
+def sequence_agent(deal):
+    prompt = f"""
+    Create a 3-step email sequence.
+
+    Company: {deal['company']}
+
+    Return:
+    Email 1:
+    Email 2:
+    Email 3:
+    """
+
+    return ask_llm(prompt) or "Sequence unavailable"
+
+
+# Safe Email Sender
+def safe_email_send(deal, email):
+    for _ in range(2):
+        try:
+            return send_email(deal["email"], "Follow-up", email)
+        except:
+            continue
+    return {"opened": False, "replied": False}
+
+
+# Metrics Engine
 def metrics_agent(deals):
     total = len(deals)
     recovered = len([d for d in deals if d["status"] == "Recovery Initiated"])
@@ -196,35 +255,87 @@ def metrics_agent(deals):
     }
 
 
-# ================= COORDINATOR =================
+# Business Impact
+def impact_agent(deals):
+    recovered = len([d for d in deals if d["status"] == "Recovery Initiated"])
+    revenue = sum(d["value"] for d in deals if d["status"] == "Recovery Initiated")
+
+    return {
+        "revenue_recovered": revenue,
+        "conversion_improvement": f"{int((recovered/len(deals))*100)}%"
+    }
+
+
+# Decision Coordinator
 def coordinator_agent(deal):
 
-    intel = intelligence_agent(deal)
-    prediction = predictive_agent(deal)
-    comp = competitive_agent(deal)
+    trace = []
 
-    if intel["risk"] != "LOW":
+    try:
+        if random.random() < 0.05:
+            raise Exception("Simulated failure")
 
-        strategy = strategy_agent(deal, intel, prediction, comp)
-        email = email_agent(deal, prediction, strategy, comp)
+        intel = intelligence_agent(deal)
+        trace.append("risk_evaluated")
 
-        execution_agent(deal)
-        adaptation = adaptation_agent(deal)
+        prediction = predictive_agent(deal)
+        trace.append("prediction_generated")
 
-        store_memory(deal, strategy["name"], "success")
+        comp = competitive_agent(deal)
+
+        if intel["risk"] == "HIGH":
+            priority = "URGENT"
+        elif intel["risk"] == "MEDIUM":
+            priority = "FOLLOW-UP"
+        else:
+            priority = "MONITOR"
+
+        if intel["risk"] != "LOW":
+
+            strategy = strategy_agent(deal, intel, prediction, comp)
+            trace.append("strategy_selected")
+
+            email = email_agent(deal, prediction, strategy, comp)
+            trace.append("email_generated")
+
+            event = safe_email_send(deal, email)
+            trace.append("email_sent")
+
+            execution_agent(deal)
+
+            adaptation = adaptation_agent(deal)
+            trace.append("adaptation_applied")
+
+            explanation = explanation_agent(deal, strategy, prediction)
+            trace.append("explanation_generated")
+
+            store_memory(deal, strategy["name"], "success")
+
+            return {
+                    "risk": intel["risk"],
+                    "priority": priority,
+                    "prediction": prediction,
+                    "strategy": strategy,
+                    "adaptation": adaptation,
+                    "explanation": explanation,
+                    "email": email,
+                    "email_event": event,
+                    "trace": trace,
+                    "agent_chain": "intelligence → prediction → strategy → execution → adaptation"
+                }
 
         return {
             "risk": intel["risk"],
-            "score": intel["score"],
+            "priority": priority,
             "prediction": prediction,
-            "strategy": strategy,
-            "adaptation": adaptation,
-            "competitive": comp,
-            "email": email
+            "trace": trace,
+            "agent_chain": "intelligence → prediction"
         }
 
-    return {
-        "risk": intel["risk"],
-        "score": intel["score"],
-        "prediction": prediction
-    }
+    except Exception as e:
+        return {
+            "error": str(e),
+            "recovery": "Fallback system activated",
+            "trace": trace,
+            "agent_chain": "error_handling → fallback"
+        }
