@@ -12,7 +12,9 @@ base_deals = [
         "status": "active",
         "email_opened": True,
         "replied": False,
-        "competitor": "Zoho"
+        "competitor": "Zoho",
+        "company_size": random.choice(["Startup", "Mid", "Enterprise"]),
+        "recent_funding": random.choice(["Seed", "Series A", "Series B", "None"])
     },
     {
         "id": "deal_2",
@@ -29,7 +31,23 @@ base_deals = [
     }
 ]
 
-
+active_accounts = [
+    {
+        "company": "AlphaCorp",
+        "support_tickets_open": 12,
+        "daily_active_users": 120
+    },
+    {
+        "company": "BetaTech",
+        "support_tickets_open": 3,
+        "daily_active_users": 900
+    },
+    {
+        "company": "GammaSoft",
+        "support_tickets_open": 18,
+        "daily_active_users": 80
+    }
+]
 def generate_dynamic_deals(n=5):
     companies = ["AlphaCorp", "BetaTech", "GammaSoft", "DeltaAI"]
 
