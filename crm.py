@@ -14,7 +14,8 @@ base_deals = [
         "replied": False,
         "competitor": "Zoho",
         "company_size": random.choice(["Startup", "Mid", "Enterprise"]),
-        "recent_funding": random.choice(["Seed", "Series A", "Series B", "None"])
+        "recent_funding": random.choice(["Seed", "Series A", "Series B", "None"]),
+        "industry": "AI SaaS"
     },
     {
         "id": "deal_2",
@@ -27,29 +28,27 @@ base_deals = [
         "status": "active",
         "email_opened": False,
         "replied": False,
-        "competitor": "Salesforce"
+        "competitor": "Salesforce",
+        "company_size": random.choice(["Startup", "Mid", "Enterprise"]),
+        "recent_funding": random.choice(["Seed", "Series A", "Series B", "None"]),
+        "industry": "Cloud"
     }
 ]
 
-active_accounts = [
-    {
-        "company": "AlphaCorp",
-        "support_tickets_open": 12,
-        "daily_active_users": 120
-    },
-    {
-        "company": "BetaTech",
-        "support_tickets_open": 3,
-        "daily_active_users": 900
-    },
-    {
-        "company": "GammaSoft",
-        "support_tickets_open": 18,
-        "daily_active_users": 80
-    }
-]
+
+active_accounts = []
+
+for i in range(20):
+    active_accounts.append({
+        "company": f"Account_{i}",
+        "support_tickets_open": random.randint(1, 20),
+        "daily_active_users": random.randint(50, 1000)
+    })
+
+
 def generate_dynamic_deals(n=5):
     companies = ["AlphaCorp", "BetaTech", "GammaSoft", "DeltaAI"]
+    industries = ["AI SaaS", "Cloud", "FinTech"]
 
     new_deals = []
     for i in range(n):
@@ -64,7 +63,10 @@ def generate_dynamic_deals(n=5):
             "status": "active",
             "email_opened": random.choice([True, False]),
             "replied": False,
-            "competitor": random.choice(["Zoho", "Salesforce", None])
+            "competitor": random.choice(["Zoho", "Salesforce", None]),
+            "company_size": random.choice(["Startup", "Mid", "Enterprise"]),
+            "recent_funding": random.choice(["Seed", "Series A", "Series B", "None"]),
+            "industry": random.choice(industries)
         })
     return new_deals
 

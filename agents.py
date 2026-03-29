@@ -4,7 +4,6 @@ from datetime import datetime
 from llm import ask_llm
 from actions import send_email
 
-# Memory Store
 memory_store = []
 
 def store_memory(deal, strategy, outcome):
@@ -19,7 +18,6 @@ def get_memory():
     return memory_store[-5:]
 
 
-# Prospecting Agent
 def prospecting_agent():
     leads = [
         {"company": "DataZen", "industry": "AI SaaS"},
@@ -30,7 +28,6 @@ def prospecting_agent():
     enriched = []
 
     for l in leads:
-
         prompt = f"""
         You are a sales prospecting AI.
 
@@ -40,7 +37,7 @@ def prospecting_agent():
         Generate:
         - Lead score (0-100)
         - 2 decision makers (name + role)
-        - Highly personalized outreach message
+        - personalized outreach message
 
         Return JSON:
         {{
@@ -71,13 +68,12 @@ def prospecting_agent():
             "industry": l["industry"],
             "score": random.randint(70, 90),
             "decision_makers": ["Unknown"],
-            "outreach": f"Hi {l['company']}, exploring partnership opportunities."
+            "outreach": f"Hi {l['company']}, wanted to connect regarding your current growth initiatives."
         })
 
     return enriched
 
 
-# Risk Analysis
 def intelligence_agent(deal):
     score = (
         deal["days_no_reply"] * 5 +
@@ -95,7 +91,6 @@ def intelligence_agent(deal):
     return {"risk": risk, "score": int(score)}
 
 
-# Churn Prediction
 def predictive_agent(deal):
     churn = min(
         0.9,
@@ -104,7 +99,6 @@ def predictive_agent(deal):
     return int(churn * 100)
 
 
-# Competitive Insight
 def competitive_agent(deal):
     if deal.get("competitor"):
         return {
@@ -113,26 +107,24 @@ def competitive_agent(deal):
     return None
 
 
-# Company Intelligence
 def enrichment_agent(deal):
     prompt = f"""
-    Provide business insights for sales outreach.
+    Provide brief business insight for sales outreach.
 
     Company: {deal['company']}
     """
 
-    return ask_llm(prompt) or "Scaling operations and improving conversions"
+    return ask_llm(prompt) or "Focused on scaling operations and improving efficiency."
 
 
-# Email Generator
 def email_agent(deal, prediction, strategy, competitive):
     insights = enrichment_agent(deal)
 
     prompt = f"""
-    Write a short B2B sales email.
+    Write a concise B2B sales email.
 
     Company: {deal['company']}
-    Insights: {insights}
+    Insight: {insights}
     Risk: {prediction}%
     Strategy: {strategy['name']}
     Competitor: {deal.get('competitor')}
@@ -143,17 +135,16 @@ def email_agent(deal, prediction, strategy, competitive):
     if response:
         return response
 
-    return f"Hi {deal['company']} Team, following up on our discussion."
+    return f"Hi {deal['company']} team, following up on our previous discussion."
 
 
-# Strategy Engine
 def strategy_agent(deal, intel, prediction, comp):
     memory = get_memory()
 
     prompt = f"""
     Suggest best sales strategy.
 
-    Past:
+    Past context:
     {memory}
 
     Company: {deal['company']}
@@ -191,13 +182,11 @@ def strategy_agent(deal, intel, prediction, comp):
     }
 
 
-# Execution Engine
 def execution_agent(deal):
     deal["status"] = "Recovery Initiated"
     deal["days_no_reply"] = 0
 
 
-# Adaptation Logic
 def adaptation_agent(deal):
     if deal["email_opened"] and not deal["replied"]:
         return "Switch follow-up strategy"
@@ -206,7 +195,6 @@ def adaptation_agent(deal):
     return "Maintain strategy"
 
 
-# Decision Explanation
 def explanation_agent(deal, strategy, prediction):
     prompt = f"""
     Explain why this deal is at risk.
@@ -216,33 +204,31 @@ def explanation_agent(deal, strategy, prediction):
     Strategy: {strategy['name']}
     """
 
-    return ask_llm(prompt) or "Risk due to inactivity and low engagement"
+    return ask_llm(prompt) or "Inactivity and reduced engagement indicate potential drop-off."
 
 
-# Email Sequence Generator (UPGRADED)
 def sequence_agent(deal):
     prompt = f"""
     You are a senior sales strategist.
 
     Company: {deal['company']}
     Industry: {deal.get('industry')}
-    Size: {deal.get('company_size')}
-    Funding: {deal.get('recent_funding')}
+    Company Size: {deal.get('company_size')}
+    Funding Stage: {deal.get('recent_funding')}
 
-    Create a 3-email sequence targeting TWO roles.
+    Identify two decision makers and create a 3-email sequence for each.
 
     Each email must include:
     - Subject
     - Body
-    - Clear next step for sales rep
+    - Next step for the sales rep
 
-    Make emails role-specific (e.g., CTO vs Head of Sales).
+    Emails should differ based on role priorities.
     """
 
-    return ask_llm(prompt) or "Sequence unavailable"
+    return ask_llm(prompt) or "Sequence not available"
 
 
-# Safe Email Sender (FIXED)
 def safe_email_send(deal, email):
     for _ in range(2):
         try:
@@ -252,7 +238,6 @@ def safe_email_send(deal, email):
     return {"opened": False, "replied": False}
 
 
-# Metrics Engine
 def metrics_agent(deals):
     total = len(deals)
     recovered = len([d for d in deals if d["status"] == "Recovery Initiated"])
@@ -263,7 +248,6 @@ def metrics_agent(deals):
     }
 
 
-# Business Impact
 def impact_agent(deals):
     recovered = len([d for d in deals if d["status"] == "Recovery Initiated"])
     revenue = sum(d["value"] for d in deals if d["status"] == "Recovery Initiated")
@@ -274,7 +258,6 @@ def impact_agent(deals):
     }
 
 
-# Impact Model (NEW)
 def impact_model(deals):
     recovered = len([d for d in deals if d["status"] == "Recovery Initiated"])
     avg_deal = sum(d["value"] for d in deals) / len(deals)
@@ -290,7 +273,6 @@ def impact_model(deals):
     }
 
 
-# Decision Coordinator
 def coordinator_agent(deal):
 
     trace = []
@@ -367,7 +349,6 @@ def coordinator_agent(deal):
         }
 
 
-# Churn Agent (UPGRADED)
 def top_churn_agent(accounts):
 
     ranked = sorted(
@@ -380,20 +361,19 @@ def top_churn_agent(accounts):
     results = []
 
     for acc in top:
-
         prompt = f"""
         Company: {acc['company']}
         Open Tickets: {acc['support_tickets_open']}
         Daily Users: {acc['daily_active_users']}
 
-        Explain churn risk AND provide a SPECIFIC retention plan.
+        Explain why churn risk is high and give a specific retention plan with clear actions.
         """
 
-        strategy = ask_llm(prompt) or "Provide dedicated support and engagement."
+        strategy = ask_llm(prompt) or "Focus on resolving open issues and re-engaging key users."
 
         results.append({
             "company": acc["company"],
-            "risk_reason": f"High tickets: {acc['support_tickets_open']}, Low usage: {acc['daily_active_users']}",
+            "risk_reason": f"Tickets: {acc['support_tickets_open']}, Users: {acc['daily_active_users']}",
             "strategy": strategy
         })
 
