@@ -1,14 +1,14 @@
 import os
 from openai import OpenAI
 
-client = None
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def get_client():
     global client
     if client:
         return client
     try:
-        client = OpenAI(api_key=os.getenv("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"))
+        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         return client
     except:
         return None
